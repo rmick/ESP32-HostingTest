@@ -89,8 +89,8 @@ void loop()
     }
     if(teamNum > 3)
     {
-        teamNum = 1;
-        playerNumber = 1;
+        Serial.println("\n\tMAIN LOOP - Countdown");
+        startGame();
     }
 }  
 

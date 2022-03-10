@@ -8,7 +8,7 @@ unsigned long   ackFailedSentTime       = millis();
 //constants - value is P data
 
 const uint8_t   cTaggerRequestToJoin        = 16;
-const uint8_t   cHostAssignPlayer           = 01;
+const uint8_t   cHostAssignPlayer           = 01; 
 const uint8_t   cTaggerAckPlayerAssign      = 17;
 const uint8_t   cAckFailed                  = 15;
 //const uint8_t   cHostLtarHostAnnounce       = 129;
@@ -19,7 +19,9 @@ const uint8_t   cHostLtarRelease            = 135;
 const uint8_t   cHostLtarPlayerDone         = 244;
 
 //constants - value is just a number
-const uint8_t   cHostAnnounce               = 255; //02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 129-Ltar
+const uint8_t   cHostAnnounce               = 02; //02=FreeForAll, 03=TwoTeams, 04=ThreeTeams, 05=HideAndSeek*, 06=HunterHunted, 
+                                                  //07=TwoKings, 08=ThreeKings, 09=OwnTheZone, 10=0A=TwoTeamOwnTheZone, 11=0B=ThreeTeamsOwnTheZone
+                                                  //12=0C=HookGame, 13, 14, 129=Ltar games...
 const uint8_t   cIdle                       = 00;
 const uint8_t   cHostPlayerDone             = 222;
 const uint8_t   cAnnounceGame               = 200;
@@ -46,6 +48,7 @@ const uint8_t   cLtarMode           = 1;
 const uint16_t  cHostInterval       = 750;
 bool            ltarHostMode        = false;
 bool            firstTimeAnnounceNewPlayer = true;
+uint8_t         countDownTime       = 30;
 
 unsigned int IRdataRx[500];              //holding IR byte array (data is ms)
 
@@ -218,6 +221,12 @@ void announceGame()
         Serial.print(",  Player:"); Serial.println(playerToBeHosted);   
         lastHostTime = millis();
         
+                //hostPlayerToGame(uint8_t _teamNumber, uint8_t _playerNumber, uint8_t _gameType,
+                //                   uint8_t _gameID,     uint8_t _gameLength,   uint8_t _health,
+                //                   uint8_t _reloads,    uint8_t _shields,      uint8_t _megaTags,
+                //                   uint8_t _flags1,     uint8_t _flags2,       int8_t _flags3 = -1)
+                //refer to https://wiki.lazerswarm.com/wiki/Announce_Game
+                
         if(ltarHostMode)    irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted, 129, gameID,  10,  25, 100,  15,  20,  32,   1, 1);
         else                irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted,   2, gameID,  10,  25, 100,  15,  20,  32,   1);                     
     }
@@ -358,3 +367,22 @@ void processAPA()
 }
 
 /////////////////////////////////////////////////////////////////////////////
+
+void startGame()  //TODO: Move this routine to esp32_ltto_Ir library
+{
+    //https://wiki.lazerswarm.com/wiki/Countdown
+
+    //PsuedoCode
+    //while (countdownTime >0)
+      //send countdown IR message
+      //wait 1000mS
+      //decrement 'secondsRemaining'
+    //
+
+    while(countDownTime > 0)
+    {
+      Serial.println("CountDown = " + countDownTime);
+      delay(1000);
+      countDownTime--;
+    }
+}
