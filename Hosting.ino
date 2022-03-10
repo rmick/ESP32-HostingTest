@@ -381,8 +381,24 @@ void startGame()  //TODO: Move this routine to esp32_ltto_Ir library
 
     while(countDownTime > 0)
     {
-      Serial.println("CountDown = " + countDownTime);
+      Serial.println("\tCountDown = " + countDownTime);
+      //P0
+      //D gameID
+      //D countDownTime
+      //D8
+      //D8
+      //D8
+      //Checksum
+      
+      irTx.sendLttoIR(PACKET, 0);
+      irTx.sendLttoIR(DATA,   gameID);
+      irTx.sendLttoIR(DATA,   countDownTime);
+      irTx.sendLttoIR(DATA,   8);
+      irTx.sendLttoIR(DATA,   8);
+      irTx.sendLttoIR(DATA,   8);
+
       delay(1000);
       countDownTime--;
     }
+    Serial.println("\n\n----- Game has started. Get out of here and have some fun! -----");
 }
