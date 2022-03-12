@@ -40,7 +40,7 @@ ESP32_IR        irTx;                       //2nd instance
 /////////////////////////////////////////////////////////////////////////////
 
 void setup() {
-    Serial.begin(250000);
+    Serial.begin(115200);
     delay(100);
 
     pinMode     (cBlueLed,  OUTPUT);
@@ -82,16 +82,31 @@ bool            cancelHosting       = false;
 void loop() 
 {   
     Serial.println("\nMAIN LOOP - Tagger Hosted: "  + (String)hostGame(cLTARmode, teamNum, playerNumber++, cButton) );
+    
     if(playerNumber > 8)
     {
         teamNum ++;
         playerNumber = 1;
     }
-    if(teamNum > 3)
+
+    //if(teamNum > 3)
+    if (playerNumber > 2)
     {
         Serial.println("\n\tMAIN LOOP - Countdown");
-        startGame();
+        startGame(30);
+
+        int endlessLoop = 127;
+        while (endlessLoop == 127)
+        {
+          digitalWrite(cBlueLed,  LOW);
+          digitalWrite(cRedLed,    LOW);
+          digitalWrite(cGreenLed,  LOW);
+          Serial.println("Game In Play");
+          getIR();
+          delay(1000);
+        }
     }
+    
 }  
 
 

@@ -19,9 +19,7 @@ const uint8_t   cHostLtarRelease            = 135;
 const uint8_t   cHostLtarPlayerDone         = 244;
 
 //constants - value is just a number
-const uint8_t   cHostAnnounce               = 02; //02=FreeForAll, 03=TwoTeams, 04=ThreeTeams, 05=HideAndSeek*, 06=HunterHunted, 
-                                                  //07=TwoKings, 08=ThreeKings, 09=OwnTheZone, 10=0A=TwoTeamOwnTheZone, 11=0B=ThreeTeamsOwnTheZone
-                                                  //12=0C=HookGame, 13, 14, 129=Ltar games...
+const uint8_t   cHostAnnounce               = 255;
 const uint8_t   cIdle                       = 00;
 const uint8_t   cHostPlayerDone             = 222;
 const uint8_t   cAnnounceGame               = 200;
@@ -36,6 +34,7 @@ int             taggerHostedID      = 0;
 uint8_t         teamToBeHosted      = 0;
 uint8_t         playerToBeHosted    = 3;
 
+uint8_t         gameType            = 02;
 uint8_t         gameID              = 42;
 uint8_t         taggerID            = 0;
 uint8_t         flags               = 0;
@@ -48,7 +47,6 @@ const uint8_t   cLtarMode           = 1;
 const uint16_t  cHostInterval       = 750;
 bool            ltarHostMode        = false;
 bool            firstTimeAnnounceNewPlayer = true;
-uint8_t         countDownTime       = 30;
 
 unsigned int IRdataRx[500];              //holding IR byte array (data is ms)
 
@@ -65,7 +63,7 @@ unsigned int IRdataRx[500];              //holding IR byte array (data is ms)
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-int8_t hostGame(bool _cLTARmode, int _teamNum, int _playerNum, int _cancelButtonPin)    //returns TaggerID
+int8_t hostGame(const bool _cLTARmode, const int _teamNum, const int _playerNum, const int _cancelButtonPin)    //returns TaggerID
 {
     taggerHostedID      = 0;
     teamToBeHosted      = _teamNum;
@@ -81,7 +79,14 @@ int8_t hostGame(bool _cLTARmode, int _teamNum, int _playerNum, int _cancelButton
             Serial.println("Cancelling...");
             taggerHostedID = -99;  
         }
-
+        if (Serial.available() > 0)
+        {
+            if(Serial.read() == 'c')
+              {
+                  Serial.println("Cancelling...");
+                  taggerHostedID = -42;
+              }
+        }
     }
     stateMachine = cAnnounceGame;
     return taggerHostedID;
@@ -227,8 +232,8 @@ void announceGame()
                 //                   uint8_t _flags1,     uint8_t _flags2,       int8_t _flags3 = -1)
                 //refer to https://wiki.lazerswarm.com/wiki/Announce_Game
                 
-        if(ltarHostMode)    irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted, 129, gameID,  10,  25, 100,  15,  20,  32,   1, 1);
-        else                irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted,   2, gameID,  10,  25, 100,  15,  20,  32,   1);                     
+        if(ltarHostMode)    irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted, 129.    , gameID,  10,  25, 100,  15,  20,  32,   1, 1);
+        else                irTx.hostPlayerToGame(teamToBeHosted, playerToBeHosted, gameType, gameID,  10,  25, 100,  15,  20,  32,   1);                     
     }
 }
 
@@ -368,37 +373,39 @@ void processAPA()
 
 /////////////////////////////////////////////////////////////////////////////
 
-void startGame()  //TODO: Move this routine to esp32_ltto_Ir library
+void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir library
 {
     //https://wiki.lazerswarm.com/wiki/Countdown
-
-    //PsuedoCode
-    //while (countdownTime >0)
-      //send countdown IR message
-      //wait 1000mS
-      //decrement 'secondsRemaining'
-    //
-
-    while(countDownTime > 0)
+ 
+    while(countDownTime >= 0)
     {
-      Serial.println("\tCountDown = " + countDownTime);
-      //P0
-      //D gameID
-      //D countDownTime
-      //D8
-      //D8
-      //D8
-      //Checksum
+      Serial.print("\tCountDown = ");
+      Serial.println(countDownTime);
       
-      irTx.sendLttoIR(PACKET, 0);
-      irTx.sendLttoIR(DATA,   gameID);
-      irTx.sendLttoIR(DATA,   countDownTime);
-      irTx.sendLttoIR(DATA,   8);
-      irTx.sendLttoIR(DATA,   8);
-      irTx.sendLttoIR(DATA,   8);
+      digitalWrite(cBlueLed,  HIGH);
+      digitalWrite(cRedLed,   LOW);
+      digitalWrite(cGreenLed, HIGH);
 
-      delay(1000);
-      countDownTime--;
+      irTx.sendLttoIR(PACKET,   0);
+      irTx.sendLttoIR(DATA,     gameID);
+                    irTx.sendLttoIR(DATA,     countDownTime--);   //TODO convert to BCD
+      irTx.sendLttoIR(DATA,     8);
+      irTx.sendLttoIR(DATA,     8);
+      irTx.sendLttoIR(DATA,     8);
+      irTx.sendLttoIR(CHECKSUM, 0);
+
+      //getIR();
+      //irRx.readRawDataPacket();
+      
+      for(int loop = 1; loop <=10; loop++)    //need to do the 1000mS delay like this to stop the RMT Rx buffer from overflowing
+      {
+        getIR();
+        delay(100);
+      }
+
+      digitalWrite(cBlueLed,  LOW);
+      digitalWrite(cRedLed,    LOW);
+      digitalWrite(cGreenLed,  HIGH);
     }
     Serial.println("\n\n----- Game has started. Get out of here and have some fun! -----");
 }
