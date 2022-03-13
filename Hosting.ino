@@ -388,7 +388,7 @@ void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir li
 
       irTx.sendLttoIR(PACKET,   0);
       irTx.sendLttoIR(DATA,     gameID);
-                    irTx.sendLttoIR(DATA,     countDownTime--);   //TODO convert to BCD
+      irTx.sendLttoIR(DATA,     toBCD(countDownTime--));
       irTx.sendLttoIR(DATA,     8);
       irTx.sendLttoIR(DATA,     8);
       irTx.sendLttoIR(DATA,     8);
@@ -397,7 +397,7 @@ void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir li
       //getIR();
       //irRx.readRawDataPacket();
       
-      for(int loop = 1; loop <=10; loop++)    //need to do the 1000mS delay like this to stop the RMT Rx buffer from overflowing
+      for(int loop = 1; loop <10; loop++)    //need to do the 1000mS delay like this to stop the RMT Rx buffer from overflowing
       {
         getIR();
         delay(100);
@@ -408,4 +408,10 @@ void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir li
       digitalWrite(cGreenLed,  HIGH);
     }
     Serial.println("\n\n----- Game has started. Get out of here and have some fun! -----");
+}
+
+int toBCD(int _dec)
+{
+    if (_dec == 100) return 0xFF;
+    return (int) (((_dec/10) << 4) | (_dec %10) );
 }
