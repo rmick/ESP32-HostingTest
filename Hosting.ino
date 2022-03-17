@@ -63,7 +63,7 @@ unsigned int IRdataRx[500];              //holding IR byte array (data is ms)
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-int8_t hostGame(const bool _cLTARmode, const int _teamNum, const int _playerNum, const int _cancelButtonPin)    //returns TaggerID
+uint8_t hostGame(const bool _cLTARmode, const int _teamNum, const int _playerNum, const int _cancelButtonPin)    //returns TaggerID
 {
     taggerHostedID      = 0;
     teamToBeHosted      = _teamNum;
@@ -144,7 +144,7 @@ void sendHostMessage()
                     Serial.print    (" == ");
                     Serial.println  (taggerHostedID);
             }
-             digitalWrite(cBlueLed,  LOW);
+            digitalWrite(cBlueLed,  LOW);
             digitalWrite(cRedLed,    LOW);
             digitalWrite(cGreenLed,  LOW);
             break;
@@ -308,38 +308,38 @@ bool getIR()
 /////////////////////////////////////////////////////////////////////////////
 
 void processRTJ()
-{        
-    Serial.println("\trequestToJoin");
+{
     static int byteCount = 1;
+    if (byteCount == 1)   Serial.println("\n-------Tagger Requested to Join -------");
+    Serial.print("\tRTJ - ");
     switch(byteCount++)
     {
         case 1:     //GameID
-            Serial.println("-------Player Responded -------");
             gameID = irRx.readRawDataPacket();
-            Serial.print("\t\tRTJ - GameID = ");Serial.println(gameID); 
+            Serial.print("GameID = ");Serial.println(gameID); 
             break;
         case 2:     //TaggerID
             taggerID = irRx.readRawDataPacket();
-            Serial.print("\t\tRTJ - TaggerID = ");Serial.println(taggerID);
+            Serial.print("TaggerID = ");Serial.println(taggerID);
             break;
         case 3:     //Flags
             flags = irRx.readRawDataPacket();
-            Serial.print("\t\tRTJ - Flags = ");Serial.println(flags);
+            Serial.print("Flags = ");Serial.println(flags);
             break;
         case 4:     //Checksum or Ltar SmartDeviceInfo
             if(ltarHostMode)
             {
-                Serial.print("\t\tRTJ - Smartdevice Info = ");Serial.println(irRx.readRawDataPacket() );
+                Serial.print("Smartdevice Info = ");Serial.println(irRx.readRawDataPacket() );
             }
             else
             {
-                Serial.print("\t\tRTJ - Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
+                Serial.print("Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
                 byteCount = 1;
                 stateMachine = cHostAssignPlayer;
             }
             break;
         case 5: //LTAR checksum
-            Serial.print("\t\tRTJ - Ltar Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
+            Serial.print("Ltar Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
             byteCount = 1;
             stateMachine = cHostAssignPlayer;
             break;
@@ -350,21 +350,21 @@ void processRTJ()
 
 void processAPA()
 {
-    Serial.println("\tackPlayerAssign");
     static int byteCount = 1;
+    if (byteCount == 1) Serial.println("\n-------Player Ackd Assign -------");
+    Serial.print("\tAPA - ");
     switch(byteCount++)
     {
         case 1:     //GameID
-            Serial.println("-------Player Ackd Assign -------");
             gameID = irRx.readRawDataPacket();
-            Serial.print("\t\tAPA - GameID = ");Serial.println(gameID); 
+            Serial.print("GameID = ");Serial.println(gameID); 
             break;
         case 2:     //TaggerID
             taggerID = irRx.readRawDataPacket();
-            Serial.print("\t\tAPA - TaggerID = ");Serial.println(taggerID);
+            Serial.print("TaggerID = ");Serial.println(taggerID);
             break;
         case 3:     //Checksum
-            Serial.print("\t\tAPA - Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
+            Serial.print("Checksum = ");Serial.println(irRx.readRawDataPacket() );Serial.println("\t\t-----------------");
             byteCount = 1;
             stateMachine = cHostPlayerDone;
             break;
@@ -373,12 +373,15 @@ void processAPA()
 
 /////////////////////////////////////////////////////////////////////////////
 
-void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir library
+void startGame(int countDownTime)
 {
+    unsigned long lastCountDown;
     //https://wiki.lazerswarm.com/wiki/Countdown
  
     while(countDownTime >= 0)
     {
+      lastCountDown = millis();
+      
       Serial.print("\tCountDown = ");
       Serial.println(countDownTime);
       
@@ -394,13 +397,9 @@ void startGame(int countDownTime)  //TODO: Move this routine to esp32_ltto_Ir li
       irTx.sendLttoIR(DATA,     8);
       irTx.sendLttoIR(CHECKSUM, 0);
 
-      //getIR();
-      //irRx.readRawDataPacket();
-      
-      for(int loop = 1; loop <10; loop++)    //need to do the 1000mS delay like this to stop the RMT Rx buffer from overflowing
+      while( (millis() - lastCountDown) < 1000)   //delay 1s whilst clearing IR buffer.,
       {
-        getIR();
-        delay(100);
+          getIR();
       }
 
       digitalWrite(cBlueLed,  LOW);
