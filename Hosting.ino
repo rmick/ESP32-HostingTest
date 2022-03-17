@@ -30,7 +30,7 @@ uint8_t         stateMachine                = cAnnounceGame;
 
 
 //variables
-int             taggerHostedID      = 0;
+uint8_t         taggerHostedID      = 0;
 uint8_t         teamToBeHosted      = 0;
 uint8_t         playerToBeHosted    = 3;
 
@@ -136,15 +136,11 @@ void sendHostMessage()
             if(ltarHostMode)    stateMachine = cHostLtarRelease;
             else 
             {
-                    Serial.println  ("HostPlayerDone");
-                    Serial.print    ("\ttaggerID = ");
-                    Serial.println  (taggerID);
-                    Serial.print    ("taggerHostedID = " + String(taggerHostedID));
                 taggerHostedID = taggerID;
-                    Serial.print    (" == ");
-                    Serial.println  (taggerHostedID);
+                Serial.println  ("HostPlayerDone");
+                Serial.print    ("taggerHostedID = " + String(taggerHostedID));
             }
-            digitalWrite(cBlueLed,  LOW);
+            digitalWrite(cBlueLed,   LOW);
             digitalWrite(cRedLed,    LOW);
             digitalWrite(cGreenLed,  LOW);
             break;
